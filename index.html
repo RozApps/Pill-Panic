@@ -134,11 +134,12 @@
         }
         
         .mobile-controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
+            display: block;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         @media (min-width: 768px) {
@@ -147,36 +148,66 @@
             }
         }
         
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 10px;
+            max-width: 240px;
+            margin: 0 auto;
+            aspect-ratio: 1;
+        }
+        
         .control-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 20px;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s ease;
-            min-width: 60px;
+            transition: all 0.1s ease;
             touch-action: manipulation;
             user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         
         .control-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.9);
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
         }
         
-        .control-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        .btn-rotate {
+            grid-column: 2;
+            grid-row: 1;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
         
-        .control-row {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            width: 100%;
+        .btn-left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        .btn-down {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        
+        .btn-right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        .btn-restart {
+            grid-column: 2;
+            grid-row: 3;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            font-size: 18px;
         }
         
         .game-over {
@@ -266,16 +297,12 @@
         </div>
         
         <div class="mobile-controls">
-            <div class="control-row">
-                <button class="control-btn" id="rotateBtn">⟲</button>
-            </div>
-            <div class="control-row">
-                <button class="control-btn" id="leftBtn">←</button>
-                <button class="control-btn" id="downBtn">↓</button>
-                <button class="control-btn" id="rightBtn">→</button>
-            </div>
-            <div class="control-row">
-                <button class="control-btn" id="restartBtn" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">R</button>
+            <div class="controls-grid">
+                <button class="control-btn btn-rotate" id="rotateBtn">⟲</button>
+                <button class="control-btn btn-left" id="leftBtn">←</button>
+                <button class="control-btn btn-down" id="downBtn">↓</button>
+                <button class="control-btn btn-right" id="rightBtn">→</button>
+                <button class="control-btn btn-restart" id="restartBtn">⟳</button>
             </div>
         </div>
     </div>
@@ -727,78 +754,51 @@
             const rotateBtn = document.getElementById('rotateBtn');
             const restartBtn = document.getElementById('restartBtn');
             
-            // Prevent context menu on long press
+            // Prevent context menu and default behaviors
             document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('selectstart', e => e.preventDefault());
             
-            // Left button
-            leftBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    currentPill.move(-1, 0);
-                }
+            // Helper function to handle button actions
+            function handleButtonPress(action) {
+                return function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (gameOver && action !== 'restart') return;
+                    
+                    switch(action) {
+                        case 'left':
+                            if (currentPill) currentPill.move(-1, 0);
+                            break;
+                        case 'right':
+                            if (currentPill) currentPill.move(1, 0);
+                            break;
+                        case 'down':
+                            if (currentPill) dropTimer = dropSpeed - 1;
+                            break;
+                        case 'rotate':
+                            if (currentPill) currentPill.rotate();
+                            break;
+                        case 'restart':
+                            startNewGame();
+                            break;
+                    }
+                };
+            }
+            
+            // Add event listeners for both touch and mouse events
+            ['touchstart', 'mousedown'].forEach(eventType => {
+                leftBtn.addEventListener(eventType, handleButtonPress('left'), { passive: false });
+                rightBtn.addEventListener(eventType, handleButtonPress('right'), { passive: false });
+                downBtn.addEventListener(eventType, handleButtonPress('down'), { passive: false });
+                rotateBtn.addEventListener(eventType, handleButtonPress('rotate'), { passive: false });
+                restartBtn.addEventListener(eventType, handleButtonPress('restart'), { passive: false });
             });
             
-            leftBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    currentPill.move(-1, 0);
-                }
-            });
-            
-            // Right button
-            rightBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    currentPill.move(1, 0);
-                }
-            });
-            
-            rightBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    currentPill.move(1, 0);
-                }
-            });
-            
-            // Down button
-            downBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    dropTimer = dropSpeed - 1;
-                }
-            });
-            
-            downBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    dropTimer = dropSpeed - 1;
-                }
-            });
-            
-            // Rotate button
-            rotateBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    currentPill.rotate();
-                }
-            });
-            
-            rotateBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (currentPill && !gameOver) {
-                    currentPill.rotate();
-                }
-            });
-            
-            // Restart button
-            restartBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startNewGame();
-            });
-            
-            restartBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                startNewGame();
+            // Prevent default touch behaviors on buttons
+            [leftBtn, rightBtn, downBtn, rotateBtn, restartBtn].forEach(btn => {
+                btn.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+                btn.addEventListener('touchend', e => e.preventDefault(), { passive: false });
             });
         }
         
