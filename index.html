@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Mario Style Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+                align-items: center;
+            }
+            
+            .game-container {
+                flex-direction: row;
+                gap: 30px;
+                padding: 30px;
+                max-width: none;
+                width: auto;
+            }
+        }
+        
+        .game-board {
+            position: relative;
+            border: 3px solid #fff;
+            border-radius: 10px;
+            background: #000;
+            align-self: center;
+        }
+        
+        .game-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .game-info {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        @media (min-width: 768px) {
+            .game-info {
+                flex-direction: column;
+                gap: 20px;
+                min-width: 200px;
+                flex-wrap: nowrap;
+            }
+        }
+        
+        .info-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        @media (min-width: 768px) {
+            .info-panel {
+                padding: 15px;
+                text-align: left;
+            }
+        }
+        
+        .info-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #64ffda;
+        }
+        
+        .info-panel p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .next-pill {
+            width: 60px;
+            height: 30px;
+            margin: 10px 0;
+            position: relative;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #222;
+        }
+        
+        .controls {
+            font-size: 11px;
+            line-height: 1.4;
+            display: none;
+        }
+        
+        @media (min-width: 768px) {
+            .controls {
+                display: block;
+                font-size: 12px;
+                line-height: 1.6;
+            }
+        }
+        
+        .mobile-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        @media (min-width: 768px) {
+            .mobile-controls {
+                display: none;
+            }
+        }
+        
+        .control-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 60px;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #ff6b6b;
+            display: none;
+        }
+        
+        .game-over h2 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .virus-count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-board">
+            <canvas id="gameCanvas" class="game-canvas" width="320" height="640"></canvas>
+            <div class="game-over" id="gameOver">
+                <h2>Game Over!</h2>
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <button onclick="startNewGame()">Play Again</button>
+            </div>
+        </div>
+        
+        <div class="game-info">
+            <div class="info-panel">
+                <h3>Score</h3>
+                <p id="score">0</p>
+            </div>
+            
+            <div class="info-panel">
+                <h3>Level</h3>
+                <p id="level">1</p>
+            </div>
+            
+            <div class="info-panel">
+                <h3>Viruses</h3>
+                <p class="virus-count" id="virusCount">0</p>
+            </div>
+            
+            <div class="info-panel">
+                <h3>Next Pill</h3>
+                <canvas id="nextPillCanvas" width="60" height="30"></canvas>
+            </div>
+            
+            <div class="info-panel">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <strong>A/D:</strong> Move left/right<br>
+                    <strong>S:</strong> Drop faster<br>
+                    <strong>W/Space:</strong> Rotate<br>
+                    <strong>R:</strong> Restart game
+                </div>
+            </div>
+        </div>
+        
+        <div class="mobile-controls">
+            <div class="control-row">
+                <button class="control-btn" id="rotateBtn">⟲</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" id="leftBtn">←</button>
+                <button class="control-btn" id="downBtn">↓</button>
+                <button class="control-btn" id="rightBtn">→</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" id="restartBtn" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">R</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('nextPillCanvas');
+        const nextCtx = nextCanvas.getContext('2d');
+        
+        const GRID_WIDTH = 8;
+        const GRID_HEIGHT = 16;
+        const CELL_SIZE = 40;
+        
+        // Game state
+        let grid = [];
+        let currentPill = null;
+        let nextPill = null;
+        let score = 0;
+        let level = 1;
+        let gameOver = false;
+        let dropTimer = 0;
+        let dropSpeed = 60; // frames between drops
+        let virusCount = 0;
+        
+        // Colors
+        const COLORS = {
+            EMPTY: '#000000',
+            RED: '#ff4757',
+            BLUE: '#3742fa',
+            YELLOW: '#ffa502',
+            VIRUS_RED: '#ff3838',
+            VIRUS_BLUE: '#2f3542',
+            VIRUS_YELLOW: '#ff9f1a'
+        };
+        
+        // Cell types
+        const CELL_TYPE = {
+            EMPTY: 0,
+            PILL_RED: 1,
+            PILL_BLUE: 2,
+            PILL_YELLOW: 3,
+            VIRUS_RED: 4,
+            VIRUS_BLUE: 5,
+            VIRUS_YELLOW: 6
+        };
+        
+        class Pill {
+            constructor(x, y, color1, color2) {
+                this.x = x;
+                this.y = y;
+                this.color1 = color1;
+                this.color2 = color2;
+                this.orientation = 0; // 0: horizontal, 1: vertical
+            }
+            
+            getPositions() {
+                if (this.orientation === 0) {
+                    return [
+                        { x: this.x, y: this.y, color: this.color1 },
+                        { x: this.x + 1, y: this.y, color: this.color2 }
+                    ];
+                } else {
+                    return [
+                        { x: this.x, y: this.y, color: this.color1 },
+                        { x: this.x, y: this.y + 1, color: this.color2 }
+                    ];
+                }
+            }
+            
+            canMove(dx, dy) {
+                const positions = this.getPositions();
+                return positions.every(pos => {
+                    const newX = pos.x + dx;
+                    const newY = pos.y + dy;
+                    return newX >= 0 && newX < GRID_WIDTH && 
+                           newY >= 0 && newY < GRID_HEIGHT &&
+                           grid[newY][newX] === CELL_TYPE.EMPTY;
+                });
+            }
+            
+            canRotate() {
+                const newOrientation = (this.orientation + 1) % 2;
+                let positions;
+                
+                if (newOrientation === 0) {
+                    positions = [
+                        { x: this.x, y: this.y },
+                        { x: this.x + 1, y: this.y }
+                    ];
+                } else {
+                    positions = [
+                        { x: this.x, y: this.y },
+                        { x: this.x, y: this.y + 1 }
+                    ];
+                }
+                
+                return positions.every(pos => {
+                    return pos.x >= 0 && pos.x < GRID_WIDTH && 
+                           pos.y >= 0 && pos.y < GRID_HEIGHT &&
+                           grid[pos.y][pos.x] === CELL_TYPE.EMPTY;
+                });
+            }
+            
+            rotate() {
+                if (this.canRotate()) {
+                    this.orientation = (this.orientation + 1) % 2;
+                    return true;
+                }
+                return false;
+            }
+            
+            move(dx, dy) {
+                if (this.canMove(dx, dy)) {
+                    this.x += dx;
+                    this.y += dy;
+                    return true;
+                }
+                return false;
+            }
+        }
+        
+        function initGrid() {
+            grid = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(CELL_TYPE.EMPTY));
+        }
+        
+        function generateViruses() {
+            virusCount = Math.min(level * 4 + 4, 84);
+            const virusTypes = [CELL_TYPE.VIRUS_RED, CELL_TYPE.VIRUS_BLUE, CELL_TYPE.VIRUS_YELLOW];
+            
+            let placed = 0;
+            while (placed < virusCount) {
+                const x = Math.floor(Math.random() * GRID_WIDTH);
+                const y = Math.floor(Math.random() * (GRID_HEIGHT - 4)) + 4; // Bottom area only
+                
+                if (grid[y][x] === CELL_TYPE.EMPTY) {
+                    grid[y][x] = virusTypes[Math.floor(Math.random() * 3)];
+                    placed++;
+                }
+            }
+        }
+        
+        function createRandomPill() {
+            const colors = [CELL_TYPE.PILL_RED, CELL_TYPE.PILL_BLUE, CELL_TYPE.PILL_YELLOW];
+            const color1 = colors[Math.floor(Math.random() * 3)];
+            const color2 = colors[Math.floor(Math.random() * 3)];
+            return new Pill(3, 0, color1, color2);
+        }
+        
+        function placePill(pill) {
+            const positions = pill.getPositions();
+            positions.forEach(pos => {
+                if (pos.y >= 0 && pos.y < GRID_HEIGHT && pos.x >= 0 && pos.x < GRID_WIDTH) {
+                    grid[pos.y][pos.x] = pos.color;
+                }
+            });
+        }
+        
+        function checkMatches() {
+            const toRemove = new Set();
+            
+            // Check horizontal matches
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                let count = 1;
+                let currentColor = grid[y][0];
+                
+                for (let x = 1; x < GRID_WIDTH; x++) {
+                    if (grid[y][x] === currentColor && currentColor !== CELL_TYPE.EMPTY) {
+                        count++;
+                    } else {
+                        if (count >= 4 && currentColor !== CELL_TYPE.EMPTY) {
+                            for (let i = x - count; i < x; i++) {
+                                toRemove.add(`${i},${y}`);
+                            }
+                        }
+                        count = 1;
+                        currentColor = grid[y][x];
+                    }
+                }
+                
+                if (count >= 4 && currentColor !== CELL_TYPE.EMPTY) {
+                    for (let i = GRID_WIDTH - count; i < GRID_WIDTH; i++) {
+                        toRemove.add(`${i},${y}`);
+                    }
+                }
+            }
+            
+            // Check vertical matches
+            for (let x = 0; x < GRID_WIDTH; x++) {
+                let count = 1;
+                let currentColor = grid[0][x];
+                
+                for (let y = 1; y < GRID_HEIGHT; y++) {
+                    if (grid[y][x] === currentColor && currentColor !== CELL_TYPE.EMPTY) {
+                        count++;
+                    } else {
+                        if (count >= 4 && currentColor !== CELL_TYPE.EMPTY) {
+                            for (let i = y - count; i < y; i++) {
+                                toRemove.add(`${x},${i}`);
+                            }
+                        }
+                        count = 1;
+                        currentColor = grid[y][x];
+                    }
+                }
+                
+                if (count >= 4 && currentColor !== CELL_TYPE.EMPTY) {
+                    for (let i = GRID_HEIGHT - count; i < GRID_HEIGHT; i++) {
+                        toRemove.add(`${x},${i}`);
+                    }
+                }
+            }
+            
+            // Remove matched cells
+            let virusesCleared = 0;
+            toRemove.forEach(pos => {
+                const [x, y] = pos.split(',').map(Number);
+                if (grid[y][x] >= CELL_TYPE.VIRUS_RED) {
+                    virusesCleared++;
+                }
+                grid[y][x] = CELL_TYPE.EMPTY;
+            });
+            
+            virusCount -= virusesCleared;
+            score += toRemove.size * 100 + virusesCleared * 200;
+            
+            return toRemove.size > 0;
+        }
+        
+        function applyGravity() {
+            let moved = false;
+            
+            for (let x = 0; x < GRID_WIDTH; x++) {
+                for (let y = GRID_HEIGHT - 2; y >= 0; y--) {
+                    if (grid[y][x] !== CELL_TYPE.EMPTY && grid[y][x] < CELL_TYPE.VIRUS_RED) {
+                        let dropY = y;
+                        while (dropY + 1 < GRID_HEIGHT && grid[dropY + 1][x] === CELL_TYPE.EMPTY) {
+                            dropY++;
+                            moved = true;
+                        }
+                        if (dropY !== y) {
+                            grid[dropY][x] = grid[y][x];
+                            grid[y][x] = CELL_TYPE.EMPTY;
+                        }
+                    }
+                }
+            }
+            
+            return moved;
+        }
+        
+        function getCellColor(cellType) {
+            switch (cellType) {
+                case CELL_TYPE.PILL_RED: return COLORS.RED;
+                case CELL_TYPE.PILL_BLUE: return COLORS.BLUE;
+                case CELL_TYPE.PILL_YELLOW: return COLORS.YELLOW;
+                case CELL_TYPE.VIRUS_RED: return COLORS.VIRUS_RED;
+                case CELL_TYPE.VIRUS_BLUE: return COLORS.VIRUS_BLUE;
+                case CELL_TYPE.VIRUS_YELLOW: return COLORS.VIRUS_YELLOW;
+                default: return COLORS.EMPTY;
+            }
+        }
+        
+        function drawCell(ctx, x, y, cellType, isVirus = false) {
+            const color = getCellColor(cellType);
+            const pixelX = x * CELL_SIZE;
+            const pixelY = y * CELL_SIZE;
+            
+            if (cellType === CELL_TYPE.EMPTY) {
+                ctx.fillStyle = COLORS.EMPTY;
+                ctx.fillRect(pixelX, pixelY, CELL_SIZE, CELL_SIZE);
+                return;
+            }
+            
+            // Draw main cell
+            ctx.fillStyle = color;
+            ctx.fillRect(pixelX + 2, pixelY + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+            
+            // Add highlight for 3D effect
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(pixelX + 4, pixelY + 4, CELL_SIZE - 8, CELL_SIZE - 8);
+            
+            // Draw virus symbol
+            if (isVirus) {
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('V', pixelX + CELL_SIZE/2, pixelY + CELL_SIZE/2 + 5);
+            }
+        }
+        
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const cellType = grid[y][x];
+                    const isVirus = cellType >= CELL_TYPE.VIRUS_RED;
+                    drawCell(ctx, x, y, cellType, isVirus);
+                }
+            }
+            
+            // Draw current pill
+            if (currentPill && !gameOver) {
+                const positions = currentPill.getPositions();
+                positions.forEach(pos => {
+                    if (pos.y >= 0) {
+                        drawCell(ctx, pos.x, pos.y, pos.color, false);
+                    }
+                });
+            }
+        }
+        
+        function drawNextPill() {
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            
+            if (nextPill) {
+                const color1 = getCellColor(nextPill.color1);
+                const color2 = getCellColor(nextPill.color2);
+                
+                // Draw horizontal pill preview
+                nextCtx.fillStyle = color1;
+                nextCtx.fillRect(5, 10, 20, 10);
+                nextCtx.fillStyle = color2;
+                nextCtx.fillRect(25, 10, 20, 10);
+                
+                // Add highlights
+                nextCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                nextCtx.fillRect(7, 12, 16, 6);
+                nextCtx.fillRect(27, 12, 16, 6);
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('level').textContent = level;
+            document.getElementById('virusCount').textContent = virusCount;
+        }
+        
+        function checkGameOver() {
+            if (virusCount === 0) {
+                level++;
+                dropSpeed = Math.max(10, dropSpeed - 5);
+                initGrid();
+                generateViruses();
+                return false;
+            }
+            
+            // Check if spawn area is blocked
+            for (let x = 3; x <= 4; x++) {
+                if (grid[0][x] !== CELL_TYPE.EMPTY) {
+                    gameOver = true;
+                    document.getElementById('finalScore').textContent = score;
+                    document.getElementById('gameOver').style.display = 'block';
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        function gameLoop() {
+            if (gameOver) return;
+            
+            if (!currentPill) {
+                currentPill = nextPill || createRandomPill();
+                nextPill = createRandomPill();
+                
+                if (checkGameOver()) return;
+            }
+            
+            dropTimer++;
+            if (dropTimer >= dropSpeed) {
+                if (!currentPill.move(0, 1)) {
+                    placePill(currentPill);
+                    currentPill = null;
+                    
+                    // Process matches and gravity
+                    let processing = true;
+                    while (processing) {
+                        const hadMatches = checkMatches();
+                        const hadGravity = applyGravity();
+                        processing = hadMatches || hadGravity;
+                    }
+                    
+                    checkGameOver();
+                }
+                dropTimer = 0;
+            }
+            
+            drawGrid();
+            drawNextPill();
+            updateUI();
+        }
+        
+        function startNewGame() {
+            score = 0;
+            level = 1;
+            dropSpeed = 60;
+            gameOver = false;
+            currentPill = null;
+            nextPill = null;
+            dropTimer = 0;
+            
+            initGrid();
+            generateViruses();
+            
+            document.getElementById('gameOver').style.display = 'none';
+        }
+        
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            if (gameOver) return;
+            if (!currentPill) return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'a':
+                case 'arrowleft':
+                    currentPill.move(-1, 0);
+                    break;
+                case 'd':
+                case 'arrowright':
+                    currentPill.move(1, 0);
+                    break;
+                case 's':
+                case 'arrowdown':
+                    dropTimer = dropSpeed - 1;
+                    break;
+                case 'w':
+                case 'arrowup':
+                case ' ':
+                    currentPill.rotate();
+                    break;
+                case 'r':
+                    startNewGame();
+                    break;
+            }
+        });
+        
+        // Initialize and start game
+        startNewGame();
+        setInterval(gameLoop, 16); // 60 FPS
+        
+        // Mobile touch controls
+        function setupMobileControls() {
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+            const downBtn = document.getElementById('downBtn');
+            const rotateBtn = document.getElementById('rotateBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            
+            // Prevent context menu on long press
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            
+            // Left button
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    currentPill.move(-1, 0);
+                }
+            });
+            
+            leftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    currentPill.move(-1, 0);
+                }
+            });
+            
+            // Right button
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    currentPill.move(1, 0);
+                }
+            });
+            
+            rightBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    currentPill.move(1, 0);
+                }
+            });
+            
+            // Down button
+            downBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    dropTimer = dropSpeed - 1;
+                }
+            });
+            
+            downBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    dropTimer = dropSpeed - 1;
+                }
+            });
+            
+            // Rotate button
+            rotateBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    currentPill.rotate();
+                }
+            });
+            
+            rotateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (currentPill && !gameOver) {
+                    currentPill.rotate();
+                }
+            });
+            
+            // Restart button
+            restartBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startNewGame();
+            });
+            
+            restartBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                startNewGame();
+            });
+        }
+        
+        // Setup mobile controls
+        setupMobileControls();
+    </script>
+</body>
+</html>
